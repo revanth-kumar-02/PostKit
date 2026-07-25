@@ -69,15 +69,15 @@ export class AIService {
       const context = contextExtractor.extract(payload.idea);
       logger.debug('Extracted Context:', context);
 
-      // Step 2: Story Planning
-      const plan = storyPlanner.plan(context);
+      // Step 2: Story Planning Engine (Brain of PostKit)
+      const plan = storyPlanner.plan(context, payload);
       logger.debug('Story Plan:', plan);
 
       // Step 3: Dedicated Hook Generation Engine (Generated & Verified FIRST)
       const verifiedHook = await hookGenerator.generateBestHook(payload, context, plan, signal);
       logger.info(`Hook Engine selected opening hook: "${verifiedHook}"`);
 
-      // Step 4: Story Body Prompt Construction (Anchored to verified hook)
+      // Step 4: Story Body Prompt Construction (Anchored to verified hook & StoryPlan)
       const systemPrompt = storyPromptBuilder.buildSystemPrompt(plan);
       const userPrompt = storyPromptBuilder.buildUserPromptWithHook(payload, plan, verifiedHook, false);
 

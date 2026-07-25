@@ -1,3 +1,6 @@
+export * from '../services/ai/story/storyTypes';
+export * from '../services/ai/story/storySchemas';
+
 export interface AIRequestPayload {
   idea: string;
   postType: string;
@@ -37,15 +40,6 @@ export interface ExtractedContext {
   technologies: string;
   emotions: string;
   goal: string;
-}
-
-export interface StoryPlan {
-  hookStrategy: string;
-  storyFlow: string;
-  reflectionAngle: string;
-  ctaStyle: string;
-  knownFacts: string[];
-  forbiddenFacts: string[];
 }
 
 export interface ValidationReport {
