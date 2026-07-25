@@ -1,5 +1,6 @@
 import type { IAIProvider, GenerateOptions } from './provider.interface';
 import type { AIRequestPayload, AIResponsePayload } from '@/types/ai';
+import { envConfig } from '@/config/env.config';
 import { httpClient } from '@/lib/fetch';
 import { AppError } from '@/lib/errorHandler';
 import { logger } from '@/lib/logger';
@@ -24,7 +25,6 @@ interface BackendGenerateResponse {
 export class GroqProvider implements IAIProvider {
   public readonly id = 'backend-groq';
   public readonly name = 'PostKit BFF Backend';
-  private readonly backendUrl = 'http://localhost:3000/api/generate';
 
   public isConfigured(): boolean {
     return true; // Configured on backend
@@ -32,9 +32,10 @@ export class GroqProvider implements IAIProvider {
 
   public async generate(payload: AIRequestPayload, options: GenerateOptions = {}): Promise<AIResponsePayload> {
     try {
-      logger.info(`Sending generation request to PostKit Backend BFF (${payload.idea.slice(0, 30)})`);
+      const endpoint = `${envConfig.backendUrl.replace(/\/$/, '')}/api/generate`;
+      logger.info(`Sending generation request to PostKit Backend (${endpoint})`);
 
-      const response = await httpClient<BackendGenerateResponse>(this.backendUrl, {
+      const response = await httpClient<BackendGenerateResponse>(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,7 +84,7 @@ export class GroqProvider implements IAIProvider {
 
       return {
         success: false,
-        error: 'Failed to connect to PostKit Backend API at http://localhost:3000. Ensure backend server is running.',
+        error: `Failed to connect to PostKit Backend API at ${envConfig.backendUrl}. Ensure backend server is running or deployed.`,
         provider: this.id,
       };
     }

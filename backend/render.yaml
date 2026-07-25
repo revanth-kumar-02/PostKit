@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: postkit-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: GROQ_API_KEY
+        sync: false

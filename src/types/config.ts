@@ -6,6 +6,7 @@ export interface AppEnvConfig {
   isProd: boolean;
   groqApiKey?: string;
   ollamaBaseUrl: string;
+  backendUrl: string;
 }
 
 export interface AppConfig {

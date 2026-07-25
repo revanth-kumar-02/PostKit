@@ -13,4 +13,5 @@ export const envConfig: AppEnvConfig = Object.freeze({
   isProd: import.meta.env.PROD ?? false,
   groqApiKey: import.meta.env.VITE_GROQ_API_KEY || '',
   ollamaBaseUrl: import.meta.env.VITE_OLLAMA_BASE_URL || 'http://localhost:11434',
+  backendUrl: import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000',
 });
