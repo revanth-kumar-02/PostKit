@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "PostKit",
-  "version": "0.1.0",
+  "name": "PostKit V2",
+  "version": "2.0.0",
   "description": "AI-powered LinkedIn post creation tool",
   "permissions": ["sidePanel", "storage", "activeTab"],
   "action": {
-    "default_popup": "src/popup/popup.html",
-    "default_title": "PostKit",
+    "default_popup": "src/extension/popup/popup.html",
+    "default_title": "PostKit V2",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
@@ -14,16 +14,16 @@
     }
   },
   "background": {
-    "service_worker": "src/background/index.ts",
+    "service_worker": "src/extension/background/index.ts",
     "type": "module"
   },
   "side_panel": {
-    "default_path": "src/sidepanel/sidepanel.html"
+    "default_path": "src/extension/sidepanel/sidepanel.html"
   },
   "content_scripts": [
     {
       "matches": ["https://www.linkedin.com/*"],
-      "js": ["src/content/index.tsx"]
+      "js": ["src/extension/content/index.tsx"]
     }
   ],
   "icons": {

@@ -1,81 +1,61 @@
-# PostKit Architecture
+# PostKit V2 Architecture Documentation
 
-## Extension Surfaces
+## Architecture Overview
 
-PostKit uses four Chrome Extension surfaces:
+PostKit V2 is engineered with a **feature-first, modular architecture** that separates Chrome Extension surface bindings from React application logic.
 
 ```mermaid
 graph TB
-    subgraph Chrome["Chrome Browser"]
-        BG["Background Service Worker<br/><code>src/background/</code>"]
-        PP["Popup<br/><code>src/popup/</code>"]
-        SP["Side Panel<br/><code>src/sidepanel/</code>"]
-        CS["Content Script<br/><code>src/content/</code>"]
-        LI["LinkedIn Page"]
+    subgraph Chrome["Chrome Extension Platform (Manifest V3)"]
+        BG["Background Service Worker<br/><code>src/extension/background/</code>"]
+        SP["Side Panel (Primary Workspace)<br/><code>src/extension/sidepanel/</code>"]
+        PP["Popup UI<br/><code>src/extension/popup/</code>"]
+        CS["Content Script<br/><code>src/extension/content/</code>"]
+        LI["LinkedIn DOM"]
     end
 
-    subgraph AI["AI Backends"]
-        GQ["Groq Cloud API"]
-        OL["Ollama Local"]
+    subgraph Core["Core App Engine"]
+        CFG["Config Layer<br/><code>src/config/</code>"]
+        LIB["Utilities & Logger<br/><code>src/lib/</code>"]
+        HOOKS["React Hooks<br/><code>src/hooks/</code>"]
+        COMP["UI Components<br/><code>src/components/</code>"]
+        STORE["Storage Adapter<br/><code>chrome.storage.local</code>"]
     end
 
-    PP -->|chrome.runtime| BG
-    SP -->|chrome.runtime| BG
-    CS -->|chrome.runtime| BG
-    CS -->|DOM access| LI
-    BG -->|HTTP| GQ
-    BG -->|HTTP| OL
-    BG -->|chrome.storage| DB[(Chrome Storage)]
+    PP -->|Opens| SP
+    SP -->|Reads/Writes| STORE
+    SP -->|Consumes| CFG
+    SP -->|Consumes| COMP
+    CS -->|Injected into| LI
+    CS -->|Message Passing| BG
+    BG -->|Configures| SP
 ```
 
-### Background Service Worker (`src/background/`)
+---
 
-- Extension lifecycle management
-- Side panel behavior configuration
-- Message routing between surfaces
-- AI API calls (future)
-- Chrome Storage operations
+## Extension Surfaces
 
-### Popup (`src/popup/`)
+1. **Background Service Worker (`src/extension/background/`)**
+   - Configures side panel behavior (`openPanelOnActionClick: true`).
+   - Listens to extension lifecycle events.
+   - Central message bus for inter-surface communication.
 
-- Quick-access UI when clicking the extension icon
-- Lightweight — opens side panel for full workflow
+2. **Side Panel (`src/extension/sidepanel/`) — *Primary Workspace***
+   - Main persistent UI where users compose and generate posts.
+   - Built with React 19 + Tailwind CSS v4 design system.
 
-### Side Panel (`src/sidepanel/`)
+3. **Content Script (`src/extension/content/`)**
+   - Injected into `https://www.linkedin.com/*`.
+   - Interacts directly with LinkedIn's post composer modal.
 
-- **Primary workspace** — where post creation happens
-- Persistent panel alongside the browser window
-- Full React application with post editor, AI generation, preview
-
-### Content Script (`src/content/`)
-
-- Injected into `linkedin.com` pages
-- Future: read post context, inject composed posts, interact with LinkedIn's editor
+4. **Popup (`src/extension/popup/`)**
+   - Lightweight quick trigger UI to open the Side Panel workspace.
 
 ---
 
-## Data Flow
+## Core Systems & Utilities
 
-1. **User opens PostKit** → side panel opens via background worker
-2. **User creates post** → side panel UI captures input
-3. **AI generation** → background worker calls Groq/Ollama API
-4. **Post preview** → side panel renders formatted preview
-5. **Publish** → content script interacts with LinkedIn page (future)
-
----
-
-## State Management
-
-- **Chrome Storage** (`chrome.storage.local`) — persists user settings, drafts, and templates
-- **React State** — ephemeral UI state within each surface
-- **No global state library** — Chrome Storage serves as the cross-surface data layer
-
----
-
-## Communication
-
-All inter-surface communication uses Chrome's built-in messaging:
-
-- `chrome.runtime.sendMessage` — one-shot messages
-- `chrome.runtime.connect` — persistent connections (if needed)
-- `chrome.storage.onChanged` — reactive storage updates
+- **Environment Config (`src/config/env.config.ts`)**: Safe accessor for Groq API key and Ollama local endpoint.
+- **Logger (`src/lib/logger.ts`)**: Production-safe logger that suppresses debug output in production.
+- **Error Handler (`src/lib/errorHandler.ts`)**: Centralized `AppError` class with observer pattern listeners.
+- **Storage Adapter (`src/lib/storage.ts`)**: Strongly typed wrapper for `chrome.storage.local` with `localStorage` web fallback.

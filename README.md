@@ -1,134 +1,117 @@
-# PostKit
+# PostKit V2
 
-AI-powered Chrome Extension for creating and publishing professional LinkedIn posts.
+AI-powered Chrome Extension for creating and publishing high-performing, professional LinkedIn posts.
 
-**Personal productivity tool** — reduces LinkedIn posting workflow from ~20 minutes to under 2 minutes.
+> **Phase 1 — Project Foundation & Architecture**  
+> PostKit V2 provides a production-grade Chrome Extension (Manifest V3) architecture powered by React 19, Vite, TypeScript, and Tailwind CSS v4.
 
 ---
 
 ## Tech Stack
 
-| Technology | Purpose |
-|------------|---------|
-| React | UI framework |
-| TypeScript | Type safety |
-| Vite | Build tool & dev server |
-| Tailwind CSS v4 | Utility-first styling |
-| CRXJS | Chrome Extension Vite plugin (HMR) |
-| Manifest V3 | Chrome Extension platform |
-| Groq API | Cloud AI inference |
-| Ollama | Local AI inference |
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **UI Framework** | React 19 | Declarative UI rendering |
+| **Language** | TypeScript (Strict) | End-to-end type safety |
+| **Build System** | Vite 8 + CRXJS | Fast HMR dev server & Chrome Extension bundling |
+| **Styling** | Tailwind CSS v4 + Design Tokens | Modern dark theme CSS variable design system |
+| **Extension Platform** | Chrome Manifest V3 | Service Worker, Side Panel, & Content Script |
+| **Code Quality** | Oxlint & Prettier | Lightning-fast linting & formatting |
 
 ---
 
-## Folder Structure
+## V2 Folder Architecture
 
 ```text
 postkit/
-├── public/
-│   └── icons/              # Extension icons (16, 48, 128px)
-│
-├── docs/
-│   ├── architecture.md     # Extension architecture & data flow
-│   ├── roadmap.md          # Development phases
-│   ├── prompts.md          # AI prompt templates
-│   └── api.md              # AI API integration notes
-│
-├── src/
-│   ├── assets/             # Static assets (images, fonts)
-│   ├── background/         # Service worker (extension lifecycle)
-│   ├── components/         # Shared reusable UI components
-│   ├── content/            # Content script (LinkedIn page injection)
-│   ├── hooks/              # Custom React hooks
-│   ├── lib/                # Core libraries & API clients
-│   ├── popup/              # Extension popup UI
-│   ├── services/           # Business logic services
-│   ├── sidepanel/          # Chrome Side Panel UI (main workspace)
-│   ├── styles/             # Global CSS & Tailwind entry
-│   ├── types/              # TypeScript type definitions
-│   └── utils/              # Shared utility functions
-│
+├── .env                    # Local environment secrets (VITE_GROQ_API_KEY)
+├── .env.example            # Environment configuration template
 ├── manifest.json           # Chrome Extension Manifest V3
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
-└── README.md
+├── package.json            # Scripts & dependencies
+├── tsconfig.json           # Root TypeScript configuration
+├── vite.config.ts          # Vite build plugin configuration
+│
+├── docs/                   # System & architecture documentation
+│   └── architecture.md     # Data flow and extension surface diagrams
+│
+├── public/                 # Extension icons & static public assets
+│   └── icons/              # Extension toolbar & store icons (16, 48, 128px)
+│
+└── src/                    # Source Code
+    ├── app/                # Main Application root wrappers & providers
+    ├── components/         # Atomic reusable UI components (Button, Card, Badge, Typography)
+    ├── config/             # Centralized configuration (env, constants, chrome, AI providers)
+    ├── extension/          # Chrome Extension Surfaces
+    │   ├── background/     # Service Worker lifecycle management
+    │   ├── content/        # Content script injected into LinkedIn pages
+    │   ├── sidepanel/      # Chrome Side Panel UI (Primary Workspace)
+    │   └── popup/          # Toolbar quick-action popup UI
+    ├── features/           # Feature-first application modules (Phase 2+)
+    ├── hooks/              # Custom React hooks (useStorage, useEnvironment)
+    ├── layouts/            # Layout shells (MainLayout, Header)
+    ├── lib/                # Core utilities, Logger, ErrorHandler, Storage adapter
+    ├── services/           # Business logic service abstractions
+    ├── styles/             # Global CSS & Tailwind CSS v4 design tokens
+    ├── types/              # Centralized TypeScript definitions
+    └── utils/              # Pure utility functions (debounce, validation, formatting, browser)
 ```
 
 ---
 
-## Development
+## Development Setup
 
-### Prerequisites
-
+### 1. Prerequisites
 - Node.js >= 20
 - npm >= 10
 
-### Install
+### 2. Environment Configuration
+Copy `.env.example` to `.env` and fill in your keys:
+```bash
+cp .env.example .env
+```
+Ensure your `.env` file contains:
+```env
+VITE_GROQ_API_KEY=your_groq_api_key_here
+VITE_OLLAMA_BASE_URL=http://localhost:11434
+```
 
+### 3. Install Dependencies
 ```bash
 npm install
 ```
 
-### Development Mode
-
+### 4. Start Development Server (HMR)
 ```bash
 npm run dev
 ```
 
-Starts Vite dev server with HMR via CRXJS. The extension auto-reloads on code changes.
-
-### Production Build
-
+### 5. Production Build
 ```bash
 npm run build
 ```
 
-Outputs to `dist/`. This is what you load into Chrome.
-
-### Lint & Format
-
-```bash
-npm run lint        # Run Oxlint
-npm run format      # Run Prettier
-```
+Outputs compiled assets to `dist/`.
 
 ---
 
-## Loading the Extension in Chrome
+## Loading PostKit V2 into Google Chrome
 
-1. Run `npm run build`
-2. Open `chrome://extensions/`
-3. Enable **Developer mode** (top-right toggle)
-4. Click **Load unpacked**
-5. Select the `dist/` folder
-6. PostKit icon appears in the toolbar
-
-### During Development
-
-When using `npm run dev`, CRXJS serves the extension with hot reload. After the first `Load unpacked`, subsequent code changes apply automatically without needing to reload the extension.
+1. Run `npm run build` (or keep `npm run dev` running).
+2. Open Chrome and navigate to `chrome://extensions/`.
+3. Enable **Developer mode** (toggle in top-right corner).
+4. Click **Load unpacked**.
+5. Select the `dist/` directory inside this repository.
+6. The **PostKit V2** icon will appear in your Chrome extension toolbar.
+7. Click the icon to open the native **Chrome Side Panel**.
 
 ---
 
-## NPM Scripts
+## Available NPM Scripts
 
-| Script | Command | Description |
-|--------|---------|-------------|
-| `dev` | `vite` | Start dev server with HMR |
-| `build` | `tsc -b && vite build` | Type-check & production build |
-| `lint` | `oxlint` | Run linter |
-| `format` | `prettier --write "src/**/*"` | Format source files |
-| `preview` | `vite preview` | Preview production build |
-
----
-
-## Coding Conventions
-
-- **Feature-based organization** — each extension surface (popup, sidepanel, background, content) has its own directory
-- **Named exports** — prefer `export function Foo()` over default exports
-- **Strict TypeScript** — `strict: true`, no `any` unless unavoidable
-- **Small components** — one component per file, focused responsibility
-- **Path aliases** — use `@/` to import from `src/` (e.g., `import { Foo } from '@/components/Foo'`)
-- **Tailwind CSS** — use utility classes, extract components for repeated patterns
-- **No dead code** — remove unused imports, variables, and functions
-- **Prettier formatting** — single quotes, trailing commas, 2-space indent
+| Command | Action |
+|---------|--------|
+| `npm run dev` | Starts Vite dev server with Hot Module Replacement |
+| `npm run build` | Runs type-checking (`tsc -b`) and builds production output in `dist/` |
+| `npm run typecheck` | Validates TypeScript types across the codebase |
+| `npm run lint` | Runs Oxlint linter across all source files |
+| `npm run format` | Runs Prettier code formatter |

@@ -1,13 +1,16 @@
 {
-  "name": "postkit",
+  "name": "postkit-v2",
   "private": true,
-  "version": "0.1.0",
+  "version": "2.0.0",
+  "description": "AI-powered LinkedIn post creation tool",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
     "lint": "oxlint",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,html}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,html}\"",
     "preview": "vite preview"
   },
   "dependencies": {
