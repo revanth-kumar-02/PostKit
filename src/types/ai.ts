@@ -1,6 +1,3 @@
-export * from '../services/ai/story/storyTypes';
-export * from '../services/ai/story/storySchemas';
-
 export interface AIRequestPayload {
   idea: string;
   postType: string;
@@ -29,47 +26,4 @@ export interface AIResponsePayload {
 export interface ValidationResult {
   isValid: boolean;
   error?: string;
-}
-
-export interface ExtractedContext {
-  project: string;
-  activity: string;
-  achievements: string;
-  challenges: string;
-  learning: string;
-  technologies: string;
-  emotions: string;
-  goal: string;
-}
-
-export interface ValidationReport {
-  isValid: boolean;
-  errors: string[];
-  hasHallucinations: boolean;
-  hasBannedWords: boolean;
-}
-
-export interface HookCandidate {
-  text: string;
-  strategy: string;
-}
-
-export interface HookEvaluationResult {
-  hook: string;
-  score: number;
-  isValid: boolean;
-  reasons: string[];
-}
-
-export interface CategoryScore {
-  category: string;
-  score: number;
-  comment?: string;
-}
-
-export interface CriticEvaluationReport {
-  overallScore: number;
-  passed: boolean;
-  categoryScores: CategoryScore[];
-  critiqueFeedback: string[];
 }
