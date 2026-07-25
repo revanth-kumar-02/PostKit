@@ -66,3 +66,16 @@ export interface HookEvaluationResult {
   isValid: boolean;
   reasons: string[];
 }
+
+export interface CategoryScore {
+  category: string;
+  score: number;
+  comment?: string;
+}
+
+export interface CriticEvaluationReport {
+  overallScore: number;
+  passed: boolean;
+  categoryScores: CategoryScore[];
+  critiqueFeedback: string[];
+}

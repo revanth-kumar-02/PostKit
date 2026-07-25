@@ -6,6 +6,7 @@ import { contextExtractor } from './story/contextExtractor';
 import { storyPlanner } from './story/storyPlanner';
 import { hookGenerator } from './story/hookGenerator';
 import { storyPromptBuilder } from './story/promptBuilder';
+import { humanizer } from './story/humanizer';
 import { outputValidator } from './story/outputValidator';
 import { logger } from '@/lib/logger';
 
@@ -81,34 +82,30 @@ export class AIService {
       const userPrompt = storyPromptBuilder.buildUserPromptWithHook(payload, plan, verifiedHook, false);
 
       // Step 5: Body Generation
-      let response = await this.activeProvider.generate(payload, {
+      const response = await this.activeProvider.generate(payload, {
         systemPrompt,
         userPrompt,
         signal,
       });
 
       if (response.success && response.post) {
-        // Enforce the exact verified hook as the post's opening line
+        // Enforce exact verified hook
         response.post.hook = verifiedHook;
 
-        // Step 6: Output Quality & Hallucination Validation
-        const report = outputValidator.validate(response.post, plan);
+        // Step 6: AI Quality Critic & Humanizer Engine
+        const humanizedPost = await humanizer.humanize(
+          response.post,
+          payload,
+          plan,
+          this.activeProvider,
+          signal
+        );
 
-        if (!report.isValid) {
-          logger.warn('Initial post body failed quality validation. Triggering 1x retry.', report.errors);
+        response.post = humanizedPost;
 
-          const retryUserPrompt = storyPromptBuilder.buildUserPromptWithHook(payload, plan, verifiedHook, true);
-          const retryResponse = await this.activeProvider.generate(payload, {
-            systemPrompt,
-            userPrompt: retryUserPrompt,
-            signal,
-          });
-
-          if (retryResponse.success && retryResponse.post) {
-            retryResponse.post.hook = verifiedHook;
-            response = retryResponse;
-          }
-        }
+        // Step 7: Final Output Quality Check
+        const finalReport = outputValidator.validate(response.post, plan);
+        logger.info('Final post validation status:', finalReport.isValid);
       }
 
       this.activeAbortController = null;
