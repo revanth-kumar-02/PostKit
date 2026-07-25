@@ -7,8 +7,7 @@ import { generateRoutes } from './routes/generate.js';
 
 export function buildApp() {
   const app = Fastify({
-    logger: false, // Custom pino logger handled in utils
-    disableRequestLogging: false,
+    logger: false,
   });
 
   // CORS Registration

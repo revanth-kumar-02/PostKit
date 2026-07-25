@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import type { GenerateRequestPayload } from '../schemas/generateSchema.js';
+import { generateRequestSchema } from '../schemas/generateSchema.js';
 import { storyPlanner } from '../services/storyPlanner.js';
 import { hookGenerator } from '../services/hookGenerator.js';
 import { promptBuilder } from '../services/promptBuilder.js';
@@ -9,11 +9,24 @@ import type { GeneratedPost } from '../services/qualityCritic.js';
 import { logger } from '../utils/logger.js';
 
 export async function handleGeneratePost(
-  request: FastifyRequest<{ Body: GenerateRequestPayload }>,
+  request: FastifyRequest,
   reply: FastifyReply
 ) {
   const startTime = Date.now();
-  const { topic, tone, audience, length } = request.body;
+  
+  const parseResult = generateRequestSchema.safeParse(request.body);
+  if (!parseResult.success) {
+    return reply.status(400).send({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid request payload format.',
+        details: parseResult.error.format(),
+      },
+    });
+  }
+
+  const { topic, tone, audience, length } = parseResult.data;
 
   logger.info({ reqId: request.id, topic: topic.slice(0, 40) }, 'Processing post generation request...');
 
