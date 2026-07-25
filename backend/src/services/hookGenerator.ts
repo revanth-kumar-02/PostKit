@@ -20,22 +20,23 @@ export class HookGenerator {
   ];
 
   public async generateBestHook(topic: string, plan: StoryPlan): Promise<string> {
-    const systemPrompt = `You are a world-class LinkedIn hook copywriter.
-Generate 4 candidate opening hook sentences based on the user topic.
+    const systemPrompt = `You are PostKit AI hook generator.
+Generate 4 candidate opening hook sentences based on the verified user input.
 
-CRITICAL RULES:
+HOOK REQUIREMENTS:
 1. Return ONLY raw JSON array of objects:
 [
-  { "strategy": "Curiosity", "hook": "Single short sentence under 18 words." },
-  { "strategy": "Expectation vs Reality", "hook": "Single short sentence under 18 words." },
-  { "strategy": "Reflection", "hook": "Single short sentence under 18 words." },
-  { "strategy": "Challenge", "hook": "Single short sentence under 18 words." }
+  { "strategy": "Curiosity", "hook": "Short sentence under 14 words." },
+  { "strategy": "Expectation vs Reality", "hook": "Short sentence under 14 words." },
+  { "strategy": "Reflection", "hook": "Short sentence under 14 words." },
+  { "strategy": "Honest", "hook": "Short sentence under 14 words." }
 ]
-2. UNDER 18 WORDS per hook.
-3. NEVER start with: "I built...", "I created...", "I spent...", "I'm excited...", "As a developer...", "Today I...".
-4. Do NOT invent unmentioned technologies or stats.`;
+2. UNDER 14 WORDS per hook.
+3. NO CLICKBAIT, NO EMOJIS, NO QUOTES.
+4. BANNED PREFIXES: NEVER start with "I built...", "I created...", "I spent...", "I'm excited...", "As a developer...", "Today I...".
+5. NO FABRICATIONS: Only use facts from user input: "${topic.trim()}".`;
 
-    const userPrompt = `TOPIC: "${topic.trim()}"`;
+    const userPrompt = `VERIFIED USER INPUT: "${topic.trim()}"`;
 
     try {
       const responseText = await groqService.generate({
@@ -65,7 +66,7 @@ CRITICAL RULES:
       logger.error({ err }, 'Backend hook candidate generation error');
     }
 
-    return `Building ${topic.slice(0, 35)} taught me something documentation never mentions.`;
+    return `Building ${topic.slice(0, 30)} revealed unexpected insights.`;
   }
 
   private parseCandidates(jsonText: string): Array<{ strategy: string; hook: string }> {
@@ -87,15 +88,17 @@ CRITICAL RULES:
     const lower = text.toLowerCase();
     const words = text.split(/\s+/).filter(Boolean);
 
-    if (words.length > 18) return 0;
+    // Max 14 words rule
+    if (words.length > 14) return 0;
 
     for (const prefix of HookGenerator.BANNED_PREFIXES) {
       if (lower.startsWith(prefix)) return 0;
     }
 
-    let score = 5.0;
-    if (words.length >= 6 && words.length <= 14) score += 2.5;
-    if (lower.includes('thought') || lower.includes('realized') || lower.includes('underestimated') || lower.includes('bug')) score += 2.5;
+    let score = 6.0;
+    if (words.length >= 5 && words.length <= 12) score += 2.0;
+    if (!lower.includes('!')) score += 1.0;
+    if (lower.includes('sometimes') || lower.includes('project') || lower.includes('experiment') || lower.includes('realized')) score += 1.0;
 
     return Math.min(score, 10.0);
   }
