@@ -1,88 +1,76 @@
 import type { IAIProvider, GenerateOptions } from './provider.interface';
 import type { AIRequestPayload, AIResponsePayload } from '@/types/ai';
-import { envConfig } from '@/config/env.config';
 import { httpClient } from '@/lib/fetch';
 import { AppError } from '@/lib/errorHandler';
 import { logger } from '@/lib/logger';
-import { responseParser } from './response.parser';
 
-interface GroqChatCompletionResponse {
-  id: string;
-  choices: Array<{
-    message: {
-      role: string;
-      content: string;
-    };
-    finish_reason: string;
-  }>;
+interface BackendGenerateResponse {
+  success: boolean;
+  storyPlan?: unknown;
+  post?: {
+    hook: string;
+    body: string;
+    reflection?: string;
+    cta: string;
+    hashtags: string[];
+  };
+  qualityScore?: number;
+  error?: {
+    code: string;
+    message: string;
+  };
 }
 
 export class GroqProvider implements IAIProvider {
-  public readonly id = 'groq';
-  public readonly name = 'Groq Cloud AI';
-  private readonly baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
-  private readonly defaultModel = 'llama-3.3-70b-versatile';
+  public readonly id = 'backend-groq';
+  public readonly name = 'PostKit BFF Backend';
+  private readonly backendUrl = 'http://localhost:3000/api/generate';
 
   public isConfigured(): boolean {
-    return Boolean(envConfig.groqApiKey && envConfig.groqApiKey.trim().length > 0);
+    return true; // Configured on backend
   }
 
   public async generate(payload: AIRequestPayload, options: GenerateOptions = {}): Promise<AIResponsePayload> {
-    if (!this.isConfigured()) {
-      return {
-        success: false,
-        error: 'Groq API key is missing. Please configure VITE_GROQ_API_KEY in your environment.',
-        provider: this.id,
-      };
-    }
-
     try {
-      const systemPrompt = options.systemPrompt || 'You are an authentic technical storyteller for LinkedIn. Return JSON only.';
-      const userPrompt = options.userPrompt || `Write a post about: "${payload.idea}"`;
+      logger.info(`Sending generation request to PostKit Backend BFF (${payload.idea.slice(0, 30)})`);
 
-      logger.info(`Sending post generation request to Groq API (${payload.postType}, ${payload.tone}, ${payload.length})`);
-
-      const response = await httpClient<GroqChatCompletionResponse>(this.baseUrl, {
+      const response = await httpClient<BackendGenerateResponse>(this.backendUrl, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${envConfig.groqApiKey}`,
+          'Content-Type': 'application/json',
         },
         body: {
-          model: this.defaultModel,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          response_format: { type: 'json_object' },
-          max_tokens: 1500,
-          temperature: 0.7,
+          topic: payload.idea,
+          tone: payload.tone,
+          audience: payload.audience,
+          length: payload.length,
         },
-        timeoutMs: 30000,
+        timeoutMs: 35000,
         signal: options.signal,
       });
 
-      if (!response || !response.choices || response.choices.length === 0) {
-        throw new AppError('ERR_MALFORMED', 'Received empty choice selection from Groq API.', 'error');
+      if (!response.success || !response.post) {
+        throw new AppError(
+          'ERR_BACKEND_FAILURE',
+          response.error?.message || 'Backend post generation failed.',
+          'error'
+        );
       }
 
-      const rawText = response.choices[0].message?.content || '';
-      const generatedPost = responseParser.parse(rawText);
-
-      logger.info('Groq API post generation succeeded.');
+      logger.info('Backend BFF post generation succeeded.');
 
       return {
         success: true,
-        message: 'Post generated successfully.',
+        message: 'Post generated successfully via PostKit Backend.',
         provider: this.id,
-        post: generatedPost,
-        rawText,
+        post: response.post,
       };
     } catch (err) {
       if (err instanceof AppError) {
         if (err.code === 'ERR_ABORTED') {
           return {
             success: false,
-            error: 'Generation cancelled.',
+            error: 'Generation request cancelled.',
             provider: this.id,
           };
         }
@@ -95,7 +83,7 @@ export class GroqProvider implements IAIProvider {
 
       return {
         success: false,
-        error: 'Failed to generate post via Groq API. Please try again.',
+        error: 'Failed to connect to PostKit Backend API at http://localhost:3000. Ensure backend server is running.',
         provider: this.id,
       };
     }

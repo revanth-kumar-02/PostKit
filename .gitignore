@@ -1,16 +1,20 @@
 # Dependencies
 node_modules
+backend/node_modules
 .pnpm-store
 
 # Build & Output
 dist
+backend/dist
 dist-ssr
 *.tsbuildinfo
 
 # Environment & Secrets
 .env
+backend/.env
 .env*.local
 !.env.example
+!backend/.env.example
 
 # Logs
 logs
