@@ -4,6 +4,7 @@ import type { AIRequestPayload, AIResponsePayload } from '@/types/ai';
 import { validateIdeaInput } from '@/utils/validator';
 import { contextExtractor } from './story/contextExtractor';
 import { storyPlanner } from './story/storyPlanner';
+import { hookGenerator } from './story/hookGenerator';
 import { storyPromptBuilder } from './story/promptBuilder';
 import { outputValidator } from './story/outputValidator';
 import { logger } from '@/lib/logger';
@@ -71,11 +72,15 @@ export class AIService {
       const plan = storyPlanner.plan(context);
       logger.debug('Story Plan:', plan);
 
-      // Step 3: Prompt Building
-      const systemPrompt = storyPromptBuilder.buildSystemPrompt(plan);
-      const userPrompt = storyPromptBuilder.buildUserPrompt(payload, plan, false);
+      // Step 3: Dedicated Hook Generation Engine (Generated & Verified FIRST)
+      const verifiedHook = await hookGenerator.generateBestHook(payload, context, plan, signal);
+      logger.info(`Hook Engine selected opening hook: "${verifiedHook}"`);
 
-      // Step 4: Generation Attempt 1
+      // Step 4: Story Body Prompt Construction (Anchored to verified hook)
+      const systemPrompt = storyPromptBuilder.buildSystemPrompt(plan);
+      const userPrompt = storyPromptBuilder.buildUserPromptWithHook(payload, plan, verifiedHook, false);
+
+      // Step 5: Body Generation
       let response = await this.activeProvider.generate(payload, {
         systemPrompt,
         userPrompt,
@@ -83,14 +88,16 @@ export class AIService {
       });
 
       if (response.success && response.post) {
-        // Step 5: Output Validation
+        // Enforce the exact verified hook as the post's opening line
+        response.post.hook = verifiedHook;
+
+        // Step 6: Output Quality & Hallucination Validation
         const report = outputValidator.validate(response.post, plan);
 
         if (!report.isValid) {
-          logger.warn('Initial post failed quality/hallucination validation. Triggering 1x auto-retry.', report.errors);
+          logger.warn('Initial post body failed quality validation. Triggering 1x retry.', report.errors);
 
-          // Retry once with strict retry instructions
-          const retryUserPrompt = storyPromptBuilder.buildUserPrompt(payload, plan, true);
+          const retryUserPrompt = storyPromptBuilder.buildUserPromptWithHook(payload, plan, verifiedHook, true);
           const retryResponse = await this.activeProvider.generate(payload, {
             systemPrompt,
             userPrompt: retryUserPrompt,
@@ -98,8 +105,7 @@ export class AIService {
           });
 
           if (retryResponse.success && retryResponse.post) {
-            const retryReport = outputValidator.validate(retryResponse.post, plan);
-            logger.info('Retry validation report:', retryReport);
+            retryResponse.post.hook = verifiedHook;
             response = retryResponse;
           }
         }

@@ -28,8 +28,8 @@ ${factGuardRules}
 4. REQUIRED OUTPUT FORMAT:
    Return ONLY a valid JSON object matching this exact structure:
    {
-     "hook": "Attention-grabbing opening sentence rooted in real experience.",
-     "body": "Natural narrative paragraphs separated by \\n\\n explaining context and what happened.",
+     "hook": "Exact opening hook provided in the prompt.",
+     "body": "Natural narrative paragraphs separated by \\n\\n continuing seamlessly from the hook.",
      "reflection": "Short authentic reflection on what was learned or discovered.",
      "cta": "Conversational closing sentence or peer question.",
      "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4"]
@@ -37,7 +37,12 @@ ${factGuardRules}
    DO NOT include markdown code blocks like \`\`\`json. Return raw JSON only.`;
   }
 
-  public buildUserPrompt(payload: AIRequestPayload, plan: StoryPlan, isRetry = false): string {
+  public buildUserPromptWithHook(
+    payload: AIRequestPayload,
+    plan: StoryPlan,
+    verifiedHook: string,
+    isRetry = false
+  ): string {
     const postTypeInstructions = this.getPostTypeInstructions(payload.postType);
     const toneInstructions = this.getToneInstructions(payload.tone);
     const audienceInstructions = this.getAudienceInstructions(payload.audience);
@@ -46,8 +51,10 @@ ${factGuardRules}
     let promptText = `USER RAW INPUT:
 "${payload.idea.trim()}"
 
+VERIFIED OPENING HOOK (MUST BE USED EXACTLY IN THE "hook" FIELD OF THE JSON):
+"${verifiedHook}"
+
 NARRATIVE PLAN:
-- Hook Strategy: ${plan.hookStrategy}
 - Story Flow: ${plan.storyFlow}
 - Reflection Angle: ${plan.reflectionAngle}
 - CTA Style: ${plan.ctaStyle}
@@ -56,13 +63,19 @@ STYLING & FORMATTING CONSTRAINTS:
 - Post Type: ${payload.postType} -> ${postTypeInstructions}
 - Tone: ${payload.tone} -> ${toneInstructions}
 - Target Audience: ${payload.audience} -> ${audienceInstructions}
-- Length Target: ${payload.length} -> ${lengthInstructions}`;
+- Length Target: ${payload.length} -> ${lengthInstructions}
+
+INSTRUCTION: Place "${verifiedHook}" directly inside the "hook" key. Continue writing the "body", "reflection", "cta", and "hashtags" flowing naturally from that exact opening hook.`;
 
     if (isRetry) {
       promptText += `\n\nCRITICAL RETRY NOTICE: The previous output contained banned corporate phrases or hallucinated unmentioned facts. Write extremely conservatively using ONLY the provided input. Do NOT add fictional details. Return raw JSON ONLY.`;
     }
 
     return promptText;
+  }
+
+  public buildUserPrompt(payload: AIRequestPayload, plan: StoryPlan, isRetry = false): string {
+    return this.buildUserPromptWithHook(payload, plan, `Building ${payload.idea.slice(0, 40)} taught me an essential lesson.`, isRetry);
   }
 
   private getPostTypeInstructions(postType: string): string {

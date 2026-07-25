@@ -54,3 +54,15 @@ export interface ValidationReport {
   hasHallucinations: boolean;
   hasBannedWords: boolean;
 }
+
+export interface HookCandidate {
+  text: string;
+  strategy: string;
+}
+
+export interface HookEvaluationResult {
+  hook: string;
+  score: number;
+  isValid: boolean;
+  reasons: string[];
+}
